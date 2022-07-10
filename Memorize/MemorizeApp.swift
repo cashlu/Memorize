@@ -18,11 +18,12 @@ struct MemorizeApp: App {
      另外，这里的game使用了let来声明，但是明显game的属性在未来是需要修改状态的，这里并没有错，
      因为EmojiMemoryGame是class，class是引用类型，game是一个指针，没有修改指针本身的值。
      */
-    let game = EmojiMemoryGame()
+    private let game = EmojiMemoryGame()
     
     var body: some Scene {
         WindowGroup {
-            ContentView(viewModel: game)
+            EmojiMemoryGameView(game: game)
+
         }
     }
 }
