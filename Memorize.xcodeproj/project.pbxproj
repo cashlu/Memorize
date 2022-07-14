@@ -14,6 +14,8 @@
 		515B52D4280AC12F001B60F7 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 515B52D3280AC12F001B60F7 /* Assets.xcassets */; };
 		515B52D7280AC12F001B60F7 /* Preview Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 515B52D6280AC12F001B60F7 /* Preview Assets.xcassets */; };
 		5189B065287B4397002676DA /* AspectVGrid.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5189B064287B4397002676DA /* AspectVGrid.swift */; };
+		51F57914287C911A0090DA12 /* Pie.swift in Sources */ = {isa = PBXBuildFile; fileRef = 51F57913287C911A0090DA12 /* Pie.swift */; };
+		51F57916287DD0600090DA12 /* Cardify.swift in Sources */ = {isa = PBXBuildFile; fileRef = 51F57915287DD0600090DA12 /* Cardify.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -26,6 +28,8 @@
 		515B52D6280AC12F001B60F7 /* Preview Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = "Preview Assets.xcassets"; sourceTree = "<group>"; };
 		515B52D8280AC12F001B60F7 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		5189B064287B4397002676DA /* AspectVGrid.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AspectVGrid.swift; sourceTree = "<group>"; };
+		51F57913287C911A0090DA12 /* Pie.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Pie.swift; sourceTree = "<group>"; };
+		51F57915287DD0600090DA12 /* Cardify.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Cardify.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -61,6 +65,8 @@
 				513C77C2280FA3EF001E2702 /* EmojiMemoryGame.swift */,
 				515B52CF280AC124001B60F7 /* MemorizeApp.swift */,
 				515B52D1280AC124001B60F7 /* EmojiMemoryGameView.swift */,
+				51F57915287DD0600090DA12 /* Cardify.swift */,
+				51F57913287C911A0090DA12 /* Pie.swift */,
 				5189B064287B4397002676DA /* AspectVGrid.swift */,
 				513C77BF280F0D28001E2702 /* MemoryGame.swift */,
 				515B52D3280AC12F001B60F7 /* Assets.xcassets */,
@@ -147,6 +153,8 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				51F57914287C911A0090DA12 /* Pie.swift in Sources */,
+				51F57916287DD0600090DA12 /* Cardify.swift in Sources */,
 				513C77C0280F0D28001E2702 /* MemoryGame.swift in Sources */,
 				515B52D2280AC124001B60F7 /* EmojiMemoryGameView.swift in Sources */,
 				515B52D0280AC124001B60F7 /* MemorizeApp.swift in Sources */,
@@ -284,7 +292,7 @@
 				DEVELOPMENT_TEAM = J676M63WPZ;
 				ENABLE_PREVIEWS = YES;
 				INFOPLIST_FILE = Memorize/Info.plist;
-				IPHONEOS_DEPLOYMENT_TARGET = 14.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 15.5;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -306,7 +314,7 @@
 				DEVELOPMENT_TEAM = J676M63WPZ;
 				ENABLE_PREVIEWS = YES;
 				INFOPLIST_FILE = Memorize/Info.plist;
-				IPHONEOS_DEPLOYMENT_TARGET = 14.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 15.5;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",

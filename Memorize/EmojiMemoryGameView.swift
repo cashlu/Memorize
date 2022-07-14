@@ -3,7 +3,7 @@
 //  Memorize
 //
 //  Created by 芦满 on 2022/4/16.
-//
+// 
 
 
 // View
@@ -24,81 +24,96 @@ struct EmojiMemoryGameView: View {
     @ObservedObject var game: EmojiMemoryGame
     
     var body: some View {
-//        ScrollView {
-//            /*
-//             stroke() 只绘制边框
-//             fill() 填充颜色
-//             stroke和fill切换，可以实现类似于牌面翻转的效果。
-//
-//             这里省略了参数content的label，因为利用了swift尾闭包的特性。
-//
-//             注意lazyVGrid的参数语法。列数的控制，传入的是GridItem对象的数组，
-//             而不是简单的数字，之所以这样，是因为GridItem对象可以更精细的控制列
-//             的属性。数组中放几个GridItem实例，则每行显示几个。
-//
-//             在本例中，只写了一个GridItem，但是在参数中指定了最小宽度和最大宽度。剩下的，
-//             由SwiftUI自己来决定每行能放置多少个View。这样可以兼容横屏。
-//             */
-//            LazyVGrid(columns: [GridItem(.adaptive(minimum: 65))]) {
-//                ForEach(game.cards) { card in
-        AspectVGrid(item: game.cards, aspectRatio: 2/3, content: { card in
-            CardView(card: card)
-                .aspectRatio(2 / 3, contentMode: .fit)
-                .onTapGesture {game.choose(card)}
-        })
-        
-//                }
-//            }
-//        }
-        .foregroundColor(.red)
-        .padding(.horizontal)
+        VStack{
+            gameBody
+            shuffle
+        }
+        .padding()
+    }
+    
+    // 将游戏卡牌的主体部分抽离出来
+    var gameBody: some View{
+        AspectVGrid(items: game.cards, aspectRatio: 2/3){ card in
+            if card.isMatched && !card.isFaceUp{
+                // 如果两张牌匹配上了，就隐藏起来。
+//                Rectangle().opacity(0)
+                // 下面的代码可以实现相同的效果
+                Color.clear
+            }else{
+                CardView(card: card)
+                    .padding(4)
+                    .onTapGesture {
+                        // 让卡牌的翻转，加上动画效果
+                        withAnimation(.easeInOut(duration: 3  )){
+                            game.choose(card)
+                        }
+                    }
+            }
+        }
+        .foregroundColor( .red)
+    }
+    
+    // “Shuffle”按钮的View
+    var shuffle: some View{
+        Button("Shuffle"){
+            // 给打乱牌组添加默认的动画效果
+            withAnimation{
+                game.shuffle()
+            }
+        }
     }
 }
 
-/// 卡片的封装
+// 卡片的封装
 struct CardView: View {
     let card: EmojiMemoryGame.Card
-    
-    /*
-     这个init()方法本来不需要，这里专门申明这个构造器方法，是为了在实例化CardView的
-     时候，可以省略card参数名。
-     */
-    //    init(_ card: EmojiMemoryGame.Card){
-    //        self.card = card
-    //    }
-    
     var body: some View {
-        GeometryReader(content: { geometry in
+        GeometryReader{ geometry in
             ZStack {
-                let shape = RoundedRectangle(cornerRadius: DrawingConstants.cornerRadius)
-                // 判断牌面是否翻转
-                if card.isFaceUp {
-                    /*
-                     在z轴上定义两个圆角矩形，下面的填充模式，前景白色。
-                     上面的边框模式，前景红色。
-                     这样做就可以较好的兼容白天模式和深夜模式。
-                     */
-                    shape.fill().foregroundColor(.white)
-                    shape.strokeBorder(lineWidth: DrawingConstants.lineWidth )
-                    Text(card.content)
-                    /*
-                     font()方法本来应该传入一个Font对象，但是因为语句太长，写在这里不美观，所以作者提取出一个函数，
-                     用于生成Font对象。
-                     
-                     因为卡牌本身宽高是不一样的，但是牌面内容的宽高比又可能和卡牌不一致，
-                     这样就会导致内充又可能在某一个方向撑爆卡牌。为了避免这种情况，这里
-                     使用了min()函数，从GeometryReader容器的建议宽高中，挑出一个较小的，
-                     作为内容的font size。
-                     */
-                        .font(font(in: geometry.size))
-                    // 被找出匹配的图片，隐藏起来。
-                }else if card.isMatched{
-                    shape.opacity(0)
-                }else {
-                    shape.fill()
-                }
+                // 注意：Angle的0角度，不是12点，是3点方向。所以绘制的时候，减去90度。
+                Pie(startAngel: Angle(degrees: 0-90), endAngle: Angle(degrees: 110-90))
+                    .padding(5).opacity(0.5)
+                Text(card.content)
+                /*
+                 rotationEffect（旋转效果）的作用是告诉动画系统，当某个条件值满足时，Text从状态A变化为状态B，
+                 但是rotationEffect并不负责动画的部分。具体的动画效果，由animation来负责。所以如果没有animation的话，
+                 totationEffect的效果会瞬间体现。
+                 
+                 总结：
+                 动画效果有两个条件，一个是对象在动画前后的两个状态，二是运动的方式和时长。
+                 本例中，rotationEffect声明了旋转的两个角度，animation负责声明运动方式和时长。
+                 */
+                    .rotationEffect(Angle.degrees(card.isMatched ? 360 : 0))
+                /*
+                 在课程中，使用的是.animation(Animation)这个方法，但是我们这里使用了.adnimation(Animation, value)，
+                 因为前者在swiftui 3.0后被弃用。此版本的 animation 会与所在视图层次和该视图层次的子节点的所有依赖项进行状态关联。
+                 视图和它子节点中的任何依赖项发生变化，都将满足启用动画插值计算的条件，并动画数据传递给作用范围内（视图和它子节点）
+                 的所有可动画部件。
+                 如下例：
+                 Circle()
+                     .fill(red ? .red : .blue)
+                     .frame(width: 30, height: 30)
+                     .offset(x: x)
+                     .animation(.easeInOut(duration: 1)) // 同时关联了 x 和 red 两个依赖项
+                 不论red还是x，任何一个依赖项满足条件，fill和offset的动画都会被触发。
+                 */
+                    .animation(
+                        Animation.linear(duration: 1)
+                            .repeatForever(autoreverses: false),
+                        value: card.isMatched)
+                /*
+                 font()方法本来应该传入一个Font对象，但是因为语句太长，写在这里不美观，所以作者提取出一个函数，
+                 用于生成Font对象。
+                 
+                 因为卡牌本身宽高是不一样的，但是牌面内容的宽高比又可能和卡牌不一致，
+                 这样就会导致内充又可能在某一个方向撑爆卡牌。为了避免这种情况，这里
+                 使用了min()函数，从GeometryReader容器的建议宽高中，挑出一个较小的，
+                 作为内容的font size。
+                 */
+                    .font(font(in: geometry.size))
             }
-        })
+            .cardify(isFaceUp: card.isFaceUp)
+        }
     }
     
     /*
@@ -117,9 +132,7 @@ struct CardView: View {
      统一管理所有常量
      */
     private struct DrawingConstants{
-        static let cornerRadius: CGFloat = 20  // 这里的类型约束不能省略，否则swift会自动将20推导为Int类型。
-        static let lineWidth: CGFloat = 3
-        static let fontScale: CGFloat = 0.8
+        static let fontScale: CGFloat = 0.7
     }
 }
 
@@ -127,11 +140,10 @@ struct CardView: View {
 struct ContentView_Previews: PreviewProvider {
     static var previews: some View {
         let game = EmojiMemoryGame()
-        EmojiMemoryGameView(game: game)
+        // 把第一张牌翻开，以便于测试
+//        game.choose(game.cards.first!)
+        return EmojiMemoryGameView(game: game)
             .preferredColorScheme(.light)
-        EmojiMemoryGameView(game: game)
-            .preferredColorScheme(.dark)
-        
     }
 }
 

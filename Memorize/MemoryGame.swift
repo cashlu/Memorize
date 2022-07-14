@@ -101,6 +101,14 @@ struct MemoryGame<CardContent> where CardContent: Equatable {
     }
     
     /*
+     将卡牌重新排列
+     */
+    mutating func shuffle(){
+        // shuffle()是数组的内置方法。
+        cards.shuffle()
+    }
+    
+    /*
      MemoryGame的构造器方法。
      
      numOfPairsOfCards: 一共有几对卡牌
@@ -128,13 +136,15 @@ struct MemoryGame<CardContent> where CardContent: Equatable {
             cards.append(Card(id: pairIndex * 2, content: content))
             cards.append(Card(id: pairIndex * 2 + 1, content: content))
         }
+        // 初始化后的卡牌组，顺序是按照读取数组的顺序创建的，所以需要在初始化的时候，打乱顺序。
+        cards.shuffle()
     }
     
     // 在ContentView中，cards需要被foreach遍历，要求遵循Identifiable协议。
     struct Card: Identifiable {
         // Identifiable协议要求具有ObjectIdentifier属性。
         let id: Int
-        var isFaceUp: Bool = true
+        var isFaceUp: Bool = false
         var isMatched: Bool = false
         /*
          content代表的是卡牌的牌面样式。

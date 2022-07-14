@@ -32,14 +32,15 @@ class EmojiMemoryGame: ObservableObject {
      远远早于实例的初始化。
      */
     private static let emojis: Array<String> = ["🚗", "✈️", "🛵", "🚢", "🚅", "🚉",
-                                   "🛴", "🚲", "🛺", "🚨", "🚔", "🚍",
-                                   "🚘", "🚖", "🚡", "🚠", "🚟", "🚃",
-                                   "🚋", "🚞", "🚝", "🚄", "🚈", "🚂",
-                                   "🚆", "🚇", "🚊"]
+                                                "🛴", "🚲", "🛺", "🚨", "🚔", "🚍",
+                                                "🚘", "🚖", "🚡", "🚠", "🚟", "🚃",
+                                                "🚋", "🚞", "🚝", "🚄", "🚈", "🚂",
+                                                "🚆", "🚇", "🚊"]
  
     // 创建MemoryGame实例的方法。
     private static func createMemoryGame() -> MemoryGame<String> {
-        MemoryGame<String>(numOfPairsOfCards: 4) { pairIndex in
+        // 这里的numOfPairsOfCards不能超过emojis的count(26)，否则previews会报错，而且错误也不明确。
+        MemoryGame<String>(numOfPairsOfCards: 8 ) { pairIndex in
             emojis[pairIndex]
         }
     }
@@ -74,5 +75,9 @@ class EmojiMemoryGame: ObservableObject {
     // 调用Model的choose方法，处理具体的点击事件。
     func choose(_ card: Card){
         model.choose(card)
+    }
+    
+    func shuffle(){
+        model.shuffle()
     }
 }
