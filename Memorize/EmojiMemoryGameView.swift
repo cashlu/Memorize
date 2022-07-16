@@ -31,23 +31,67 @@ struct EmojiMemoryGameView: View {
         .padding()
     }
     
+    @State private var dealt = Set<Int>()
+    
+    private func deal(_ card: EmojiMemoryGame.Card){
+        dealt.insert(card.id)
+    }
+
+    private func isUnDealt(_ card: EmojiMemoryGame.Card) -> Bool{
+        // isUnDealt，结果要取反
+        !dealt.contains(card.id)
+    }
+    
     // 将游戏卡牌的主体部分抽离出来
     var gameBody: some View{
+        /*
+         在AspectVGrid的声明中，items数组的类型和闭包参数类型是相同的泛型，所以这里items的cards对应闭包实参card。
+         AspectVGrid只是负责了卡牌没有翻开之前的布局排列、间距。但是并不负责具体的卡牌样式。卡牌两面的背景、前景、倒计时用的Pie等元素样式
+         由CardView负责。
+         */
         AspectVGrid(items: game.cards, aspectRatio: 2/3){ card in
-            if card.isMatched && !card.isFaceUp{
+            if isUnDealt(card) || (card.isMatched && !card.isFaceUp){
                 // 如果两张牌匹配上了，就隐藏起来。
-//                Rectangle().opacity(0)
+                // Rectangle().opacity(0)
                 // 下面的代码可以实现相同的效果
                 Color.clear
             }else{
                 CardView(card: card)
                     .padding(4)
+                /* scale代表缩放效果，easeinOut代表运动方式（加速度曲线）
+                 .transition(AnyTransition.scale.animation(Animation.easeInOut(duration: 2)))
+                 
+                 非对称过场效果，入场用scale，出场用opacity。这里入场效果看不出来，因为CardView一直都存在。
+                 如果只是简单的在这里定义过场动画，入场动画是不会有效果的。因为这些CardView并没有从容器AspectVGrid中出现或消失，
+                 在渲染AspectVGrid的时候，这些CardView已经在AspectVGrid中了。所以没有入场效果，之所以有出场效果，是因为两张卡牌
+                 匹配后，我们调用Color.clear或者Rectagle().opacity(0)让他消失了，相当于让卡牌出场了，所以有出场效果。
+                 
+                 ***
+                 给一个容器设置transition后，是这个容器整体的出场或入场。
+                 给一个容器设置animation后，容器会将animation分发给所有的内部View，各自展示动画效果。
+                 */
+                    .transition(AnyTransition.asymmetric(insertion: .scale, removal: .opacity).animation(.easeInOut(duration: 1)))
                     .onTapGesture {
                         // 让卡牌的翻转，加上动画效果
-                        withAnimation(.easeInOut(duration: 3  )){
+                        withAnimation{
                             game.choose(card)
                         }
                     }
+            }
+        }
+        /*
+         当AspectVGrid出现后，执行内部的闭包。
+         这里的原理是，正常情况下，所有的卡牌View会跟AspectVGrid一起渲染出来，在AspectVGrid出现的时候，卡牌View已经存在了，卡牌
+         View没有“出现”这个过程，所以出场动画无效。这里让 AspectVGrid 在 onAppear 的时候，将所有的卡牌ID，都加入到dealt数组中，
+         而上面AspectVGrid在一开始做了判断，所有不在dealt中的，都不显示。因为先执行了上面的if判断，所以相当于先把所有的卡牌都移除
+         出容器，然后在容器 onAppear 后，再加进来。这样卡牌 View 就有了“出现”这个过程，自然就可以加入出场动画了。
+         */
+        .onAppear(){
+            // TODO: 这里有一个疑问，为什么要放在withAnimation里面？
+            withAnimation{
+                for card in game.cards{
+                    deal(card)
+                }
             }
         }
         .foregroundColor( .red)
@@ -64,7 +108,7 @@ struct EmojiMemoryGameView: View {
     }
 }
 
-// 卡片的封装
+// 卡牌View的封装
 struct CardView: View {
     let card: EmojiMemoryGame.Card
     var body: some View {

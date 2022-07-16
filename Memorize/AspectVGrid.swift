@@ -10,20 +10,25 @@ import SwiftUI
 
 /*
  卡牌的显示布局，这里单独抽离出来，以便于日后实现复用。
+ 
+ AspectVGrid的主要功能，是定义游戏主界面的卡牌布局显示。AspectVGrid在初始化的时候，接收三个参数：
+ 1、[Item]数组，Item是泛型，在MemoryGame中，实际上就是卡牌的数组。（用泛型是因为卡牌不一定只有EmojiMemoryGame一种。）
+ 2、aspectRatio，是卡牌的“高宽比”，这个参数用于根据屏幕的尺寸来计算每行放多少张牌。
+ 3、content是一个闭包，content参数前面的 @ViewBuilder，表示这个content是一个ViewBuilder。 @ViewBuilder 的作用，是让闭包content
+    可以提供多个子view。在本例中，EmojiMemoryGameView.swift中，实例化AspectVGrid的时候，闭包中实际上传入的不止一个CardView，
+    还有Rectangle。这个content具体的实现不在这里，由调用方提供，也就是View中的实例化AspectVGrid时传入的闭包。从下面的body代码块中可以
+    看出，调用content的时候，传入了参数item，而item也是调用方提供的。从这里可以看出来AspectVGrid的主要工作，就是在LazyVGrid中，for循环
+    遍历[Item]数组，然后分别在每一次循环中，将item传给content函数。这是主要的逻辑，次要功能就是对卡牌组的样式做了一定的描述。
  */
 struct AspectVGrid<Item, ItemView>: View where ItemView: View, Item: Identifiable {
     var items: [Item]
     var aspectRatio: CGFloat
     /*
-     这里使用了另一个泛型ItemView，而不是some View，因为some View代表
-     当前函数返回某个遵循View协议的对象，但不确定是哪一个，具体在函数体中
-     确认。而这里只是声明属性，并没有具体的函数实现，所以不能用在这里。
-     下面的body可以用，是因为body有具体的函数实现。body会根据内部包含的具体
-     View实现类，来替换声明中的some View。
-     简单一句话概括：这是Swift的语法限制。
+     这里使用了另一个泛型ItemView，而不是some View，因为some View代表当前函数返回某个遵循View协议的对象，但不确定是哪一个，具体在函数体
+     中确认。而这里只是声明属性，所以不能用在这里。下面的body可以用，是因为body有具体的函数实现。body会根据内部包含的具体View实现类，来替
+     换声明中的some View。简单一句话概括：这是Swift的语法限制。
      
-     但是，这里的ItemView也不是毫无限制，他必须是一个View实现类，所以必有在
-     函数声明的位置使用where关键字约束。
+     但是，这里的ItemView也不是毫无限制，他必须是一个View实现类，所以必有在函数声明的位置使用where关键字约束。
      */
     var content: (Item) -> ItemView
     
@@ -33,10 +38,6 @@ struct AspectVGrid<Item, ItemView>: View where ItemView: View, Item: Identifiabl
      
      本例中，init是初始化函数，对象创建后，init则return，但是传入的闭包content存储在self.content中，并没有随之消亡，所以
      是一个“逃逸的闭包”。
-     
-     content参数前面的 @ViewBuilder，表示这个content是一个ViewBuilder。 @ViewBuilder 的作用，是让闭包content可以提供
-     多个子view。在本例中，EmojiMemoryGameView.swift中，实例化AspectVGrid的时候，闭包中实际上传入的不止一个CardView，
-     还有Rectangle。
      */
     init(items: [Item], aspectRatio: CGFloat, @ViewBuilder content: @escaping (Item)->ItemView){
         self.items = items
