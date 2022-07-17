@@ -80,4 +80,10 @@ class EmojiMemoryGame: ObservableObject {
     func shuffle(){
         model.shuffle()
     }
+    
+    // 开始新游戏的方法，就是重新初始化model
+    func restart(){
+        // 静态方法的调用，要加上完整类名。
+        model = EmojiMemoryGame.createMemoryGame()
+    }
 }

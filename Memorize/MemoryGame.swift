@@ -34,7 +34,6 @@ struct MemoryGame<CardContent> where CardContent: Equatable {
      同时，每当这个属性发生修改时，使用set逻辑，确保只有一个牌面是faceUp的，确保逻辑的正确性。
      */
     private var indexOfTheOneAndOnlyFaceUpCard: Int? {
-        
         get{
             /*
              初始化所有faceUp的index数组，这里调用了cards.indices.filter方法。filter方法的参数是indices()方法

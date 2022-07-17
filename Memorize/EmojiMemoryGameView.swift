@@ -22,11 +22,20 @@ struct EmojiMemoryGameView: View {
      通知时，去接收这些通知，以便于反应到UI上。
      */
     @ObservedObject var game: EmojiMemoryGame
+    @Namespace private var dealingNameSpace
     
     var body: some View {
-        VStack{
-            gameBody
-            shuffle
+        ZStack(alignment: .bottom){
+            VStack{
+                gameBody
+                HStack{
+                    restart
+                    Spacer()
+                    shuffle
+                }
+                .padding(.horizontal)
+            }
+            deckBody
         }
         .padding()
     }
@@ -42,6 +51,36 @@ struct EmojiMemoryGameView: View {
         !dealt.contains(card.id)
     }
     
+    /*
+     说明：
+     在绘制deck区卡牌的时候，因为所有卡牌都是重叠在一起的，所以最先进入ZStack的CardView，就会在最下面（压栈），最上面的一张卡牌，是最后放
+     进去的，等到卡牌从deck区飞向gameBody区的时候，由于也是根据数组原先的顺序，显示的效果，就是deck区域的最上面一张牌始终不动，从最下面开始
+     出牌，这样的显示效果不理想，我们希望从最上面一张开始，deck区的牌堆嘴上的一张牌，随着发牌的过程，始终在不停的变化。
+     
+     gameBody的CardView和deckBody的CardView两个地方，分别调用了zIndex()函数。外面的zIndex()函数，是swift自带的方法。里面作为参数的
+     zIndex函数，是这里自己定义的。
+     swift自带的zIndex函数，接受一个Double类型的参数value。当两个View重叠的时候，value大的那个，会显示在上方。
+     这里我们又自己定义了一个zIndex()函数，用于给每张在deck区的卡牌，生成自己的zIndex value，生成的规则，是按照卡牌数组现有顺序的倒序来排
+     列，具体的逻辑，是读取每张牌index，取index的负数，这样越靠前的牌，负数index就越小，就会排在越下方。
+     
+     而之所以在gameBody和deckBody两个地方的CardView都调用zIndex，是因为要让这两个区域的顺序一致。（存疑）
+     */
+    private func zIndex(of card: EmojiMemoryGame.Card) -> Double{
+        -Double(game.cards.firstIndex(where: {$0.id == card.id}) ?? 0)
+    }
+    
+    /*
+     根据牌组中，每张卡牌的index，来对每张卡牌指定不同的动画延迟，这样做的效果是，卡牌从deck飞向gameBody的时候，是一张一张飞出去的。
+     totalDealDuration是整个动画过程的时长，除以卡牌的数量，就得到了每张卡牌能平均分配到的时间，再乘以index，就是没张牌开始动画的delay。
+     */
+    private func dealAnimation(for card: EmojiMemoryGame.Card) -> Animation{
+        var delay = 0.0
+        if let index = game.cards.firstIndex(where: {$0.id == card.id}){
+            delay = Double(index) * (CardConstants.totalDealDuration / Double(game.cards.count))
+        }
+        return Animation.easeInOut(duration: CardConstants.dealDuration).delay(delay)
+    }
+    
     // 将游戏卡牌的主体部分抽离出来
     var gameBody: some View{
         /*
@@ -51,12 +90,24 @@ struct EmojiMemoryGameView: View {
          */
         AspectVGrid(items: game.cards, aspectRatio: 2/3){ card in
             if isUnDealt(card) || (card.isMatched && !card.isFaceUp){
-                // 如果两张牌匹配上了，就隐藏起来。
-                // Rectangle().opacity(0)
-                // 下面的代码可以实现相同的效果
+                /*
+                 如果两张牌匹配上了，就隐藏起来。
+                 Rectangle().opacity(0)
+                 下面的代码可以实现相同的效果
+                 */
                 Color.clear
             }else{
                 CardView(card: card)
+                /*
+                 matchedGeometryEffect实现了卡牌从下方deck，飞到gameBody中的效果。
+                 在没有matchedGeometryEffect的时候，如果我们要实现一个动画效果，我们需要明确的告诉View移动的速度，位移的距离等，
+                 但是有了matchedGeometryEffect，我们只需要定义好动画前后的两个状态View，当两个View要进行切换时，
+                 matchedGeometryEffect会自动的对动画进行插值，实现效果。
+                 使用的方法，就是在前后两个状态的 View 中，都添加下面这个语句。
+                 
+                 注意：matchedGeometryEffect不能实现颜色的动画切换。颜色的切换是一瞬间的。
+                 */
+                    .matchedGeometryEffect(id: card.id, in: dealingNameSpace)
                     .padding(4)
                 /* scale代表缩放效果，easeinOut代表运动方式（加速度曲线）
                  .transition(AnyTransition.scale.animation(Animation.easeInOut(duration: 2)))
@@ -65,12 +116,16 @@ struct EmojiMemoryGameView: View {
                  如果只是简单的在这里定义过场动画，入场动画是不会有效果的。因为这些CardView并没有从容器AspectVGrid中出现或消失，
                  在渲染AspectVGrid的时候，这些CardView已经在AspectVGrid中了。所以没有入场效果，之所以有出场效果，是因为两张卡牌
                  匹配后，我们调用Color.clear或者Rectagle().opacity(0)让他消失了，相当于让卡牌出场了，所以有出场效果。
-                 
+                 .transition(AnyTransition.asymmetric(insertion: .scale, removal: .opacity))
+
                  ***
                  给一个容器设置transition后，是这个容器整体的出场或入场。
                  给一个容器设置animation后，容器会将animation分发给所有的内部View，各自展示动画效果。
+                 
+                 最后这里修改了出入场动画，入场不要动画效果，因为入场的动画，由后续添加的matchGeometryEffect完成了。
                  */
-                    .transition(AnyTransition.asymmetric(insertion: .scale, removal: .opacity).animation(.easeInOut(duration: 1)))
+                    .transition(AnyTransition.asymmetric(insertion: .identity, removal: .scale))
+                    .zIndex(zIndex(of: card))
                     .onTapGesture {
                         // 让卡牌的翻转，加上动画效果
                         withAnimation{
@@ -79,22 +134,42 @@ struct EmojiMemoryGameView: View {
                     }
             }
         }
-        /*
-         当AspectVGrid出现后，执行内部的闭包。
-         这里的原理是，正常情况下，所有的卡牌View会跟AspectVGrid一起渲染出来，在AspectVGrid出现的时候，卡牌View已经存在了，卡牌
-         View没有“出现”这个过程，所以出场动画无效。这里让 AspectVGrid 在 onAppear 的时候，将所有的卡牌ID，都加入到dealt数组中，
-         而上面AspectVGrid在一开始做了判断，所有不在dealt中的，都不显示。因为先执行了上面的if判断，所以相当于先把所有的卡牌都移除
-         出容器，然后在容器 onAppear 后，再加进来。这样卡牌 View 就有了“出现”这个过程，自然就可以加入出场动画了。
-         */
-        .onAppear(){
-            // TODO: 这里有一个疑问，为什么要放在withAnimation里面？
-            withAnimation{
-                for card in game.cards{
+        .foregroundColor(CardConstants.color)
+    }
+    
+    var deckBody: some View{
+        ZStack{
+            ForEach(game.cards.filter(isUnDealt)){ card in
+                CardView(card: card)
+                    .matchedGeometryEffect(id: card.id, in: dealingNameSpace)
+                /*
+                 deck上卡牌的出入场动画，和游戏区(gameBody)的动画刚好相反，这样做的目的是，gameBody中opacity出场的卡牌，
+                 在deck中以同样的opacity的方式入场，视觉观感上比较一致。
+                 */
+                    .transition(AnyTransition.asymmetric(insertion: .opacity, removal: .identity))
+                    .zIndex(zIndex(of: card))
+            }
+        }
+        // 闲置牌堆的deck，尺寸是固定的，不能让容器自动分配。
+        .frame(width: CardConstants.unDealtWidth, height: CardConstants.unDealtHeigh)
+        .foregroundColor(CardConstants.color)
+        .onTapGesture{
+            for card in game.cards{
+                withAnimation(dealAnimation(for: card)){
                     deal(card)
                 }
             }
         }
-        .foregroundColor( .red)
+    }
+        
+    // 用于卡牌的常量
+    private struct CardConstants{
+        static let color = Color.red
+        static let aspectRatio: CGFloat = 2/3
+        static let dealDuration: Double = 0.5
+        static let totalDealDuration: Double = 2
+        static let unDealtHeigh: CGFloat = 90
+        static let unDealtWidth: CGFloat = unDealtHeigh * aspectRatio
     }
     
     // “Shuffle”按钮的View
@@ -103,6 +178,16 @@ struct EmojiMemoryGameView: View {
             // 给打乱牌组添加默认的动画效果
             withAnimation{
                 game.shuffle()
+            }
+        }
+    }
+    
+    var restart: some View{
+        Button("Restart"){
+            withAnimation{
+                // 开始新游戏前需要将dealt清空。 
+                dealt = []
+                game.restart()
             }
         }
     }
