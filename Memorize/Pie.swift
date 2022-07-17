@@ -23,6 +23,17 @@ struct Pie: Shape{
      */
     var clockwise: Bool = false
     
+    // 动画效果需要监控animatableData值的变化，从而插值实现动画效果。
+    var animatableData: AnimatablePair<Double, Double>{
+        get{
+            AnimatablePair(startAngel.radians, endAngle.radians)
+        }
+        set{
+            startAngel = Angle.radians(newValue.first)
+            endAngle = Angle.radians(newValue.second)
+        }
+    }
+    
     //rect是绘图的容器
     func path(in rect: CGRect) -> Path {
         // 通过容器先找到画布的中心点
@@ -34,7 +45,6 @@ struct Pie: Shape{
             x: center.x + radius * CGFloat(cos(startAngel.radians)),
             y: center.y + radius * CGFloat(sin(startAngel.radians))
         )
-        
         /*
          开始画图
          首先将“画笔”移动到中心点，然后向上画直线，直线的长度是半径。然后画一条弧线，最后画直线返回中心点。

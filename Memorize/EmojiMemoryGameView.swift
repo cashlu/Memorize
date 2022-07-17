@@ -196,12 +196,36 @@ struct EmojiMemoryGameView: View {
 // 卡牌View的封装
 struct CardView: View {
     let card: EmojiMemoryGame.Card
+    /*
+     卡牌翻开后调用的倒计时逻辑，并没有改变卡牌本身，所以View不会主动重新渲染，所以这里需要给CardView定义一个依赖于倒计时，实时变化的属性，
+     当倒计时的时候，这个属性随之实时变化，就可以带动View实时的刷新。
+     */
+    @State private var animatedBonusRemaining: Double = 0
+    
     var body: some View {
         GeometryReader{ geometry in
             ZStack {
+                // 这里包裹一个Group，目的是让下面的padding和opacity只写一遍，否则需要在if和else分支分别写两遍 。
+                Group{
+                    if(card.isConsumingBonusTime){
+                        Pie(startAngel: Angle(degrees: 0-90), endAngle: Angle(degrees: (1 - animatedBonusRemaining ) * 360 - 90))
+                            .onAppear{
+                                /*
+                                 当Pie出现的时候，先将 animatedBonusRemaining 赋值为这张牌剩余时间的百分比（Double类型），然后在
+                                 withAnimation中指定了运动方式和时长，时长是这张牌剩余的时间。然后指定了运动的最终状态，也就是将
+                                 animatedBonusRemaining重置到0，动画结束。
+                                 */
+                                animatedBonusRemaining = card.bonusRemaining
+                                withAnimation(.linear(duration: card.bonusTimeRemaining)){
+                                    animatedBonusRemaining = 0
+                                }
+                            }
+                    }else{
+                        Pie(startAngel: Angle(degrees: 0-90), endAngle: Angle(degrees: (1 - card.bonusRemaining) * 360 - 90))
+                    }
+                }
                 // 注意：Angle的0角度，不是12点，是3点方向。所以绘制的时候，减去90度。
-                Pie(startAngel: Angle(degrees: 0-90), endAngle: Angle(degrees: 110-90))
-                    .padding(5).opacity(0.5)
+                .padding(5).opacity(0.5)
                 Text(card.content)
                 /*
                  rotationEffect（旋转效果）的作用是告诉动画系统，当某个条件值满足时，Text从状态A变化为状态B，

@@ -143,16 +143,76 @@ struct MemoryGame<CardContent> where CardContent: Equatable {
     struct Card: Identifiable {
         // Identifiable协议要求具有ObjectIdentifier属性。
         let id: Int
-        var isFaceUp: Bool = false
-        var isMatched: Bool = false
+        let content: CardContent
+        var isFaceUp: Bool = false{
+            didSet{
+                if isFaceUp{
+                    startUsingBonusTime()
+                }else{
+                    stopUsingBounsTime()
+                }
+            }
+        }
+        var isMatched: Bool = false{
+            didSet{
+                stopUsingBounsTime()
+            }
+        }
         /*
          content代表的是卡牌的牌面样式。
          这里只是申明了content属性为CardContent类型，但实际上CardContent仅是一个泛型的占位符，并不是一个实际的类型。
          可以这样理解，实际的业务需求上，MemoryGame只是定义了游戏的基础构成，但是细节方面并没有约定，例如卡牌排面的样式、
          卡牌数量的多寡等，这些需要在EmojiMemoryGame实例化的时候，才能确定。
          */
-        let content: CardContent
+
+        // ------------------- 倒计时逻辑 --------------------------
+        // can be zero which means "no bonus available" for this card
+        var bonusTimeLimit: TimeInterval = 6
+        // the last time this card was turned face up (and is still face up)
+        var lastFaceUpDate: Date?
+        // the accumulated time this card has been face up in the past
+        // (i.e. not including the current time it's been face up if is currently so)
+        var pastFaceUpTime: TimeInterval = 0
+        //  how long this card has even been face up
+        private var faceUpTime: TimeInterval{
+            if let lastFaceUpDate = self.lastFaceUpDate{
+                return pastFaceUpTime + Date().timeIntervalSince(lastFaceUpDate)
+            }else{
+                return pastFaceUpTime
+            }
+        }
+        // how much time left before the bonus opportunity runs out
+        var bonusTimeRemaining: TimeInterval{
+            max(0, bonusTimeLimit - faceUpTime)
+        }
+        // percentage of the bonus time remaining
+        var bonusRemaining: Double{
+            (bonusTimeLimit > 0 && bonusTimeRemaining > 0) ? bonusTimeRemaining / bonusTimeLimit : 0
+        }
+        // whether the card was matched during the bonus time period
+        var hasEarnedBouns: Bool{
+            isMatched && bonusTimeRemaining > 0
+        }
+        // whether we are currently face up, unmatched and have not yet used up the bonus window
+        var isConsumingBonusTime:Bool{
+            isFaceUp && !isMatched && bonusTimeRemaining > 0
+        }
+        
+        // called when the card transitions to face up state
+        private mutating func startUsingBonusTime(){
+            if isConsumingBonusTime, lastFaceUpDate == nil{
+                lastFaceUpDate = Date()
+            }
+        }
+        // called when the card goes back face down(or gets matched)
+        private mutating func stopUsingBounsTime(){
+            pastFaceUpTime = faceUpTime
+            self.lastFaceUpDate = nil
+        }
+        // ------------------- 倒计时逻辑结束 --------------------------
     }
+    
+    
 }
 
 /*
@@ -171,3 +231,6 @@ extension Array{
         }
     }
 }
+
+
+
